@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, send_file
+from flask_cors import CORS
 import os
 import json
 import google.generativeai as genai
@@ -10,6 +11,7 @@ import uuid
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+CORS(app, origins=['https://voice-accessibility-frontend.netlify.app', 'http://localhost:3000', 'http://127.0.0.1:5000'])
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.config['UPLOAD_FOLDER'] = 'uploads'
 
@@ -389,6 +391,172 @@ def text_to_speech():
     except Exception as e:
         return jsonify({'error': f'Error generating speech: {str(e)}'}), 500
 
+# Testing and Debug Routes
+@app.route('/health')
+def health_check():
+    """Health check endpoint for monitoring"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': str(datetime.now()),
+        'service': 'Voice Accessibility Learning Assistant'
+    })
+
+@app.route('/api/status')
+def api_status():
+    """Check API dependencies status"""
+    status = {
+        'google_api': 'configured' if GOOGLE_API_KEY and GOOGLE_API_KEY != "dummy_key" else 'missing',
+        'upload_folder': 'exists' if os.path.exists(app.config['UPLOAD_FOLDER']) else 'missing',
+        'sessions_active': len(sessions),
+        'service': 'Voice Accessibility Learning Assistant'
+    }
+    
+    # Test Google API connection
+    try:
+        test_model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        status['google_api_connection'] = 'working'
+    except Exception as e:
+        status['google_api_connection'] = f'error: {str(e)}'
+    
+    return jsonify(status)
+
+@app.route('/test/tts')
+def test_tts():
+    """Test text-to-speech functionality"""
+    try:
+        test_text = "This is a test of the text-to-speech system."
+        tts = gTTS(text=test_text, lang='en', slow=False)
+        
+        # Create temporary file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+        tts.save(temp_file.name)
+        
+        return send_file(temp_file.name, as_attachment=True, download_name='tts_test.mp3', mimetype='audio/mpeg')
+        
+    except Exception as e:
+        return jsonify({'error': f'TTS test failed: {str(e)}'}), 500
+
+@app.route('/test/ai', methods=['POST'])
+def test_ai():
+    """Test AI text generation"""
+    try:
+        test_prompt = request.json.get('prompt', 'Hello, this is a test prompt.')
+        
+        response = gemini_model.generate_content(test_prompt)
+        
+        return jsonify({
+            'success': True,
+            'prompt': test_prompt,
+            'response': response.text,
+            'timestamp': str(datetime.now())
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'AI test failed: {str(e)}'
+        }), 500
+
+@app.route('/test/session')
+def test_session():
+    """Create a test session for debugging"""
+    try:
+        test_session_id = str(uuid.uuid4())
+        assistant = VoiceAssistant(test_session_id)
+        sessions[test_session_id] = assistant
+        
+        return jsonify({
+            'success': True,
+            'session_id': test_session_id,
+            'state': assistant.state,
+            'message': 'Test session created successfully'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Session test failed: {str(e)}'
+        }), 500
+
+@app.route('/debug/sessions')
+def debug_sessions():
+    """Debug endpoint to view active sessions"""
+    session_info = {}
+    for session_id, assistant in sessions.items():
+        session_info[session_id] = {
+            'state': assistant.state,
+            'has_pdf_content': bool(assistant.pdf_content),
+            'has_summary': bool(assistant.summary),
+            'quiz_questions_count': len(assistant.quiz_questions),
+            'current_question_index': assistant.current_question_index,
+            'score': assistant.score
+        }
+    
+    return jsonify({
+        'total_sessions': len(sessions),
+        'sessions': session_info
+    })
+
+@app.route('/test/upload-form')
+def test_upload_form():
+    """Simple HTML form for testing file uploads"""
+    return '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Test PDF Upload</title>
+        <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            .container { max-width: 500px; margin: 0 auto; }
+            .form-group { margin: 20px 0; }
+            input[type="file"] { padding: 10px; }
+            button { background: #ff8c00; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+            .result { margin-top: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Test PDF Upload</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="pdf">Select PDF file:</label><br>
+                    <input type="file" id="pdf" name="pdf" accept=".pdf" required>
+                </div>
+                <button type="submit">Upload and Test</button>
+            </form>
+            <div id="result" class="result" style="display:none;"></div>
+        </div>
+        
+        <script>
+            document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData();
+                const fileInput = document.getElementById('pdf');
+                formData.append('pdf', fileInput.files[0]);
+                
+                const resultDiv = document.getElementById('result');
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = 'Uploading...';
+                
+                try {
+                    const response = await fetch('/upload_pdf', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    resultDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                } catch (error) {
+                    resultDiv.innerHTML = 'Error: ' + error.message;
+                }
+            });
+        </script>
+    </body>
+    </html>
+    '''
+
 if __name__ == '__main__':
+    from datetime import datetime
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
