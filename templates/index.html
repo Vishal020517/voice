@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Accessibility Learning Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎧 Voice Learning Assistant</h1>
+            <p>Upload a PDF and learn through intelligent voice interaction</p>
+        </header>
+
+        <div class="chat-container">
+            <div id="chat-messages" class="chat-messages">
+                <div class="message bot-message">
+                    <div class="message-content">
+                        <span class="speaker">🤖 AI Assistant</span>
+                        <div class="audio-message">
+                            <button class="play-audio-btn" data-text="Hello! I'm your voice learning assistant. Please upload a PDF document to get started with our interactive learning experience.">
+                                ▶️ Play Welcome Message
+                            </button>
+                            <span class="audio-status">Ready to play</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-section">
+                <!-- PDF Upload Section -->
+                <div id="upload-section" class="upload-section">
+                    <input type="file" id="pdf-input" accept=".pdf" style="display: none;">
+                    <button id="upload-btn" class="btn btn-primary">
+                        📄 Upload PDF Document
+                    </button>
+                    <div id="upload-status" class="upload-status"></div>
+                </div>
+
+                <!-- Voice Controls -->
+                <div id="voice-controls" class="voice-controls" style="display: none;">
+                    <button id="voice-btn" class="btn btn-voice">
+                        🎤 Hold to Speak
+                    </button>
+                    <button id="play-btn" class="btn btn-secondary" style="display: none;">
+                        🔊 Play Response
+                    </button>
+                </div>
+
+                <!-- Quiz Controls -->
+                <div id="quiz-controls" class="quiz-controls" style="display: none;">
+                    <div class="quiz-options">
+                        <button class="quiz-option" data-option="A">A</button>
+                        <button class="quiz-option" data-option="B">B</button>
+                        <button class="quiz-option" data-option="C">C</button>
+                        <button class="quiz-option" data-option="D">D</button>
+                    </div>
+                    <p class="quiz-instruction">Select an option or use voice commands to answer</p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div id="action-buttons" class="action-buttons" style="display: none;">
+                    <button id="yes-btn" class="btn btn-success">✅ Yes</button>
+                    <button id="no-btn" class="btn btn-danger">❌ No</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audio Element for TTS -->
+        <audio id="tts-audio" controls style="display: none;"></audio>
+        
+        <!-- Status Indicator -->
+        <div id="status-indicator" class="status-indicator">
+            <span id="status-text">Ready</span>
+            <div id="loading-spinner" class="spinner" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

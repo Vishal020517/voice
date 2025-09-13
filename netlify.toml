@@ -1,0 +1,17 @@
+[build]
+  publish = "."
+  command = "echo 'No build step required for Flask app'"
+
+[build.environment]
+  PYTHON_VERSION = "3.9"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[functions]
+  directory = "."
+  
+# Note: This is a Flask application that requires server-side hosting
+# Netlify Functions or a dedicated Python hosting service like Heroku, Railway, or Render would be more appropriate
